@@ -1,13 +1,13 @@
 {
-  "name": "@uniswap/smart-order-router",
-  "version": "3.10.0",
-  "description": "Uniswap Smart Order Router",
+  "name": "@totality-fi/smart-order-router",
+  "version": "1.0.0",
+  "description": "Totality Smart Order Router",
   "main": "build/main/index.js",
   "typings": "build/main/index.d.ts",
   "module": "build/module/index.js",
   "repository": {
     "type": "git",
-    "url": "https://github.com/Uniswap/smart-order-router.git"
+    "url": "https://github.com/Totality-Finance/smart-order-router.git"
   },
   "license": "GPL",
   "keywords": [],
