@@ -1,25 +1,44 @@
 import { BigNumber } from '@ethersproject/bignumber';
 import { Logger } from '@ethersproject/logger';
+import { BaseProvider } from '@ethersproject/providers';
+import DEFAULT_TOKEN_LIST from '@uniswap/default-token-list';
 import { SwapRouter, Trade } from '@uniswap/router-sdk';
 import { Currency, Token, TradeType } from '@uniswap/sdk-core';
-import { FeeAmount, MethodParameters, Pool, Route } from '@uniswap/v3-sdk';
+import { Route } from '@uniswap/v2-sdk';
+import { Pair } from '@uniswap/v2-sdk';
+import { MethodParameters } from '@uniswap/v3-sdk';
 import _ from 'lodash';
+import NodeCache from 'node-cache';
 
-import { IOnChainQuoteProvider, RouteWithQuotes } from '../../providers';
+import {
+  CachingTokenListProvider,
+  CachingTokenProviderWithFallback,
+  CachingV2PoolProvider,
+  IV2PoolProvider,
+  NodeJSCache,
+  RouteWithQuotes,
+  TokenProvider,
+  UniswapMulticallProvider,
+  V2PoolProvider,
+  V2QuoteProvider, V2RouteWithQuotes
+} from '../../providers';
 import { IMulticallProvider } from '../../providers/multicall-provider';
 import {
   DAI_MAINNET,
   ITokenProvider,
   USDC_MAINNET,
 } from '../../providers/token-provider';
-import { IV3PoolProvider } from '../../providers/v3/pool-provider';
 import { SWAP_ROUTER_02_ADDRESSES } from '../../util';
 import { CurrencyAmount } from '../../util/amounts';
 import { ChainId } from '../../util/chains';
 import { log } from '../../util/log';
 import { routeToString } from '../../util/routes';
-import { V3RouteWithValidQuote } from '../alpha-router';
-import { SwapOptionsSwapRouter02, SwapRoute, V3Route } from '../router';
+import { V2RouteWithValidQuote } from '../alpha-router';
+import {
+  SwapOptionsSwapRouter02,
+  SwapRoute,
+  V2Route
+} from '../router';
 
 import {
   ADDITIONAL_BASES,
@@ -27,12 +46,10 @@ import {
   CUSTOM_BASES,
 } from './bases';
 
+
 export type LegacyRouterParams = {
   chainId: ChainId;
-  multicall2Provider: IMulticallProvider;
-  poolProvider: IV3PoolProvider;
-  quoteProvider: IOnChainQuoteProvider;
-  tokenProvider: ITokenProvider;
+  provider: BaseProvider;
 };
 
 // Interface defaults to 2.
@@ -50,22 +67,38 @@ export type LegacyRoutingConfig = {
 export class LegacyRouter {
   protected chainId: ChainId;
   protected multicall2Provider: IMulticallProvider;
-  protected poolProvider: IV3PoolProvider;
-  protected quoteProvider: IOnChainQuoteProvider;
+  protected poolProvider: IV2PoolProvider;
+  protected quoteProvider: V2QuoteProvider;
   protected tokenProvider: ITokenProvider;
 
   constructor({
     chainId,
-    multicall2Provider,
-    poolProvider,
-    quoteProvider,
-    tokenProvider,
+    provider
   }: LegacyRouterParams) {
     this.chainId = chainId;
-    this.multicall2Provider = multicall2Provider;
-    this.poolProvider = poolProvider;
-    this.quoteProvider = quoteProvider;
-    this.tokenProvider = tokenProvider;
+
+    this.multicall2Provider = new UniswapMulticallProvider(chainId, provider, 375_000);
+
+    this.poolProvider =
+      new CachingV2PoolProvider(
+        chainId,
+        new V2PoolProvider(chainId, this.multicall2Provider),
+        new NodeJSCache(new NodeCache({ stdTTL: 60, useClones: false }))
+      );
+
+    this.quoteProvider = new V2QuoteProvider();
+
+    this.tokenProvider =
+      new CachingTokenProviderWithFallback(
+        chainId,
+        new NodeJSCache(new NodeCache({ stdTTL: 3600, useClones: false })),
+        new CachingTokenListProvider(
+          chainId,
+          DEFAULT_TOKEN_LIST,
+          new NodeJSCache(new NodeCache({ stdTTL: 3600, useClones: false }))
+        ),
+        new TokenProvider(chainId, this.multicall2Provider)
+      );
   }
   public async route(
     amount: CurrencyAmount,
@@ -106,8 +139,7 @@ export class LegacyRouter {
     const routeQuote = await this.findBestRouteExactIn(
       amountIn,
       tokenOut,
-      routes,
-      routingConfig
+      routes
     );
 
     if (!routeQuote) {
@@ -161,8 +193,7 @@ export class LegacyRouter {
     const routeQuote = await this.findBestRouteExactOut(
       amountOut,
       tokenIn,
-      routes,
-      routingConfig
+      routes
     );
 
     if (!routeQuote) {
@@ -206,21 +237,17 @@ export class LegacyRouter {
   private async findBestRouteExactIn(
     amountIn: CurrencyAmount,
     tokenOut: Token,
-    routes: V3Route[],
-    routingConfig?: LegacyRoutingConfig
-  ): Promise<V3RouteWithValidQuote | null> {
+    routes: V2Route[]
+  ): Promise<V2RouteWithValidQuote | null> {
     const { routesWithQuotes: quotesRaw } =
-      await this.quoteProvider.getQuotesManyExactIn<V3Route>(
+      await this.quoteProvider.getQuotesManyExactIn(
         [amountIn],
-        routes,
-        {
-          blockNumber: routingConfig?.blockNumber,
-        }
+        routes
       );
 
     const quotes100Percent = _.map(
       quotesRaw,
-      ([route, quotes]: RouteWithQuotes<V3Route>) =>
+      ([route, quotes]: RouteWithQuotes<V2Route>) =>
         `${routeToString(route)} : ${quotes[0]?.quote?.toString()}`
     );
     log.info({ quotes100Percent }, '100% Quotes');
@@ -238,16 +265,12 @@ export class LegacyRouter {
   private async findBestRouteExactOut(
     amountOut: CurrencyAmount,
     tokenIn: Token,
-    routes: V3Route[],
-    routingConfig?: LegacyRoutingConfig
-  ): Promise<V3RouteWithValidQuote | null> {
+    routes: V2Route[]
+  ): Promise<V2RouteWithValidQuote | null> {
     const { routesWithQuotes: quotesRaw } =
-      await this.quoteProvider.getQuotesManyExactOut<V3Route>(
+      await this.quoteProvider.getQuotesManyExactOut(
         [amountOut],
-        routes,
-        {
-          blockNumber: routingConfig?.blockNumber,
-        }
+        routes
       );
     const bestQuote = await this.getBestQuote(
       routes,
@@ -260,11 +283,11 @@ export class LegacyRouter {
   }
 
   private async getBestQuote(
-    routes: V3Route[],
-    quotesRaw: RouteWithQuotes<V3Route>[],
+    routes: V2Route[],
+    quotesRaw: V2RouteWithQuotes[],
     quoteToken: Token,
     routeType: TradeType
-  ): Promise<V3RouteWithValidQuote | null> {
+  ): Promise<V2RouteWithValidQuote | null> {
     log.debug(
       `Got ${
         _.filter(quotesRaw, ([_, quotes]) => !!quotes[0]).length
@@ -272,7 +295,7 @@ export class LegacyRouter {
     );
 
     const routeQuotesRaw: {
-      route: V3Route;
+      route: V2Route;
       quote: BigNumber;
       amount: CurrencyAmount;
     }[] = [];
@@ -302,7 +325,7 @@ export class LegacyRouter {
     });
 
     const routeQuotes = _.map(routeQuotesRaw, ({ route, quote, amount }) => {
-      return new V3RouteWithValidQuote({
+      return new V2RouteWithValidQuote({
         route,
         rawQuote: quote,
         amount,
@@ -314,12 +337,9 @@ export class LegacyRouter {
             gasEstimate: BigNumber.from(0),
           }),
         },
-        sqrtPriceX96AfterList: [],
-        initializedTicksCrossedList: [],
-        quoterGasEstimate: BigNumber.from(0),
         tradeType: routeType,
         quoteToken,
-        v3PoolProvider: this.poolProvider,
+        v2PoolProvider: this.poolProvider,
       });
     });
 
@@ -338,8 +358,8 @@ export class LegacyRouter {
     tokenIn: Token,
     tokenOut: Token,
     routingConfig?: LegacyRoutingConfig
-  ): Promise<V3Route[]> {
-    const tokenPairs: [Token, Token, FeeAmount][] =
+  ): Promise<V2Route[]> {
+    const tokenPairs: [Token, Token][] =
       await this.getAllPossiblePairings(tokenIn, tokenOut);
 
     const poolAccessor = await this.poolProvider.getPools(tokenPairs, {
@@ -347,7 +367,7 @@ export class LegacyRouter {
     });
     const pools = poolAccessor.getAllPools();
 
-    const routes: V3Route[] = this.computeAllRoutes(
+    const routes: V2Route[] = this.computeAllRoutes(
       tokenIn,
       tokenOut,
       pools,
@@ -369,7 +389,7 @@ export class LegacyRouter {
   private async getAllPossiblePairings(
     tokenIn: Token,
     tokenOut: Token
-  ): Promise<[Token, Token, FeeAmount][]> {
+  ): Promise<[Token, Token][]> {
     const common =
       BASES_TO_CHECK_TRADES_AGAINST(this.tokenProvider)[this.chainId] ?? [];
     const additionalA =
@@ -389,7 +409,8 @@ export class LegacyRouter {
 
     const customBases = (await CUSTOM_BASES(this.tokenProvider))[this.chainId];
 
-    const allPairs: [Token, Token, FeeAmount][] = _([
+    //This only actually generates all pairs between the common tokens
+    const allPairs: [Token, Token][] = _([
       // the direct pair
       [tokenIn, tokenOut],
       // token A against all bases
@@ -419,13 +440,6 @@ export class LegacyRouter {
 
         return true;
       })
-      .flatMap<[Token, Token, FeeAmount]>(([tokenA, tokenB]) => {
-        return [
-          [tokenA, tokenB, FeeAmount.LOW],
-          [tokenA, tokenB, FeeAmount.MEDIUM],
-          [tokenA, tokenB, FeeAmount.HIGH],
-        ];
-      })
       .value();
 
     return allPairs;
@@ -434,14 +448,15 @@ export class LegacyRouter {
   private computeAllRoutes(
     tokenIn: Token,
     tokenOut: Token,
-    pools: Pool[],
+    pools: Pair[],
     chainId: ChainId,
-    currentPath: Pool[] = [],
-    allPaths: V3Route[] = [],
+    currentPath: Pair[] = [],
+    allPaths: V2Route[] = [],
     startTokenIn: Token = tokenIn,
     maxHops = 2
-  ): V3Route[] {
+  ): V2Route[] {
     for (const pool of pools) {
+      //Skip pools not related to our tokenIn
       if (currentPath.indexOf(pool) !== -1 || !pool.involvesToken(tokenIn))
         continue;
 
@@ -450,9 +465,10 @@ export class LegacyRouter {
         : pool.token0;
       if (outputToken.equals(tokenOut)) {
         allPaths.push(
-          new V3Route([...currentPath, pool], startTokenIn, tokenOut)
+          new V2Route([...currentPath, pool], startTokenIn, tokenOut)
         );
       } else if (maxHops > 1) {
+        //Recall this with the
         this.computeAllRoutes(
           outputToken,
           tokenOut,
@@ -473,7 +489,7 @@ export class LegacyRouter {
     tokenInCurrency: Currency,
     tokenOutCurrency: Currency,
     tradeType: TTradeType,
-    routeAmount: V3RouteWithValidQuote
+    routeAmount: V2RouteWithValidQuote
   ): Trade<Currency, Currency, TTradeType> {
     const { route, amount, quote } = routeAmount;
 
@@ -493,20 +509,19 @@ export class LegacyRouter {
       );
 
       const routeCurrency = new Route(
-        route.pools,
+        route.pairs,
         amountCurrency.currency,
         quoteCurrency.currency
       );
 
       return new Trade({
         v3Routes: [
-          {
-            routev3: routeCurrency,
-            inputAmount: amountCurrency,
-            outputAmount: quoteCurrency,
-          },
         ],
-        v2Routes: [],
+        v2Routes: [          {
+          routev2: routeCurrency,
+          inputAmount: amountCurrency,
+          outputAmount: quoteCurrency,
+        },],
         tradeType: tradeType,
       });
     } else {
@@ -523,20 +538,20 @@ export class LegacyRouter {
       );
 
       const routeCurrency = new Route(
-        route.pools,
+        route.pairs,
         quoteCurrency.currency,
         amountCurrency.currency
       );
 
       return new Trade({
-        v3Routes: [
+        v3Routes: [],
+        v2Routes: [
           {
-            routev3: routeCurrency,
+            routev2: routeCurrency,
             inputAmount: quoteCurrency,
             outputAmount: amountCurrency,
           },
         ],
-        v2Routes: [],
         tradeType: tradeType,
       });
     }
