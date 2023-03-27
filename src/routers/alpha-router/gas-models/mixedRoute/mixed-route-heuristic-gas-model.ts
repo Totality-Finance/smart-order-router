@@ -1,6 +1,6 @@
 import { BigNumber } from '@ethersproject/bignumber';
-import { partitionMixedRouteByProtocol } from '@uniswap/router-sdk';
-import { Pair } from '@uniswap/v2-sdk';
+import { partitionMixedRouteByProtocol } from '@totality-fi/router-sdk';
+import { Pair } from '@totality-fi/v1-sdk';
 import { Pool } from '@uniswap/v3-sdk';
 import _ from 'lodash';
 

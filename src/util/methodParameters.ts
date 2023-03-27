@@ -3,13 +3,13 @@ import {
   Protocol,
   SwapRouter as SwapRouter02,
   Trade,
-} from '@uniswap/router-sdk';
+} from '@totality-fi/router-sdk';
+import { Route as V2RouteRaw } from '@totality-fi/v1-sdk';
 import { Currency, TradeType } from '@uniswap/sdk-core';
 import {
   SwapRouter as UniveralRouter,
   UNIVERSAL_ROUTER_ADDRESS,
-} from '@uniswap/universal-router-sdk';
-import { Route as V2RouteRaw } from '@uniswap/v2-sdk';
+} from '@totality-fi/universal-router-sdk';
 import { Route as V3RouteRaw } from '@uniswap/v3-sdk';
 import _ from 'lodash';
 
@@ -19,9 +19,9 @@ import {
   MethodParameters,
   MixedRouteWithValidQuote,
   RouteWithValidQuote,
+  SWAP_ROUTER_02_ADDRESSES,
   SwapOptions,
   SwapType,
-  SWAP_ROUTER_02_ADDRESSES,
   V2RouteWithValidQuote,
   V3RouteWithValidQuote,
 } from '..';

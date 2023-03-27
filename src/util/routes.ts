@@ -1,11 +1,12 @@
-import { Protocol } from '@uniswap/router-sdk';
+import { Protocol } from '@totality-fi/router-sdk';
+import { Pair } from '@totality-fi/v1-sdk';
 import { Percent } from '@uniswap/sdk-core';
-import { Pair } from '@uniswap/v2-sdk';
 import { Pool } from '@uniswap/v3-sdk';
 import _ from 'lodash';
 
 import { RouteWithValidQuote } from '../routers/alpha-router';
 import { MixedRoute, V2Route, V3Route } from '../routers/router';
+
 import { V3_CORE_FACTORY_ADDRESSES } from './addresses';
 
 import { CurrencyAmount } from '.';

@@ -1,6 +1,6 @@
 import { BigNumber } from '@ethersproject/bignumber';
 import { Currency, Token, TradeType } from '@uniswap/sdk-core';
-import { Pair } from '@uniswap/v2-sdk';
+import { Pair } from '@totality-fi/v1-sdk';
 import { Pool } from '@uniswap/v3-sdk';
 import _ from 'lodash';
 

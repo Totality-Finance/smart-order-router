@@ -1,7 +1,7 @@
 import { BigNumber } from '@ethersproject/bignumber';
-import { Protocol } from '@uniswap/router-sdk';
+import { Protocol } from '@totality-fi/router-sdk';
 import { Currency, CurrencyAmount, Token, TradeType } from '@uniswap/sdk-core';
-import { Pair } from '@uniswap/v2-sdk/dist/entities';
+import { Pair } from '@totality-fi/v1-sdk/dist/entities';
 import { FeeAmount, Pool } from '@uniswap/v3-sdk';
 import _ from 'lodash';
 

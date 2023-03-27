@@ -172,10 +172,10 @@ export abstract class IOnChainGasModelFactory {
   public abstract buildGasModel({
     chainId,
     gasPriceWei,
-    v3poolProvider: V3poolProvider,
+    v3poolProvider,
     amountToken,
     quoteToken,
-    v2poolProvider: V2poolProvider,
+    v2poolProvider,
     l2GasDataProvider,
   }: BuildOnChainGasModelFactoryType): Promise<
     IGasModel<V3RouteWithValidQuote | MixedRouteWithValidQuote>

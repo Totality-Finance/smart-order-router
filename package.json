@@ -1,6 +1,6 @@
 {
   "name": "@totality-fi/smart-order-router",
-  "version": "1.0.0",
+  "version": "1.0.7",
   "description": "Totality Smart Order Router",
   "main": "build/main/index.js",
   "typings": "build/main/index.d.ts",
@@ -31,15 +31,18 @@
     "node": ">=10"
   },
   "dependencies": {
+    "@totality-fi/router-sdk": "^1.0.1",
+    "@totality-fi/universal-router-sdk": "^1.0.0",
+    "@totality-fi/v1-sdk": "^3.0.5",
     "@uniswap/default-token-list": "^2.0.0",
     "@uniswap/permit2-sdk": "^1.2.0",
     "@uniswap/router-sdk": "^1.3.0",
+    "@uniswap/sdk-core": "^3.2.2",
     "@uniswap/swap-router-contracts": "^1.3.0",
     "@uniswap/token-lists": "^1.0.0-beta.25",
     "@uniswap/universal-router": "^1.0.1",
     "@uniswap/universal-router-sdk": "^1.3.9",
-    "@uniswap/v2-sdk": "^3.0.1",
-    "@uniswap/v3-sdk": "^3.7.0",
+    "@uniswap/v3-sdk": "^3.9.0",
     "async-retry": "^1.3.1",
     "await-timeout": "^1.1.1",
     "axios": "^0.21.1",
@@ -51,7 +54,8 @@
     "lodash": "^4.17.21",
     "mnemonist": "^0.38.3",
     "node-cache": "^5.1.2",
-    "stats-lite": "^2.2.0"
+    "stats-lite": "^2.2.0",
+    "tslint": "^6.1.3"
   },
   "devDependencies": {
     "@ethersproject/providers": "^5.4.0",

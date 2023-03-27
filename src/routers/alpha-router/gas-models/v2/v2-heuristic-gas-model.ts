@@ -1,6 +1,6 @@
 import { BigNumber } from '@ethersproject/bignumber';
 import { Token } from '@uniswap/sdk-core';
-import { Pair } from '@uniswap/v2-sdk';
+import { Pair } from '@totality-fi/v1-sdk';
 import _ from 'lodash';
 
 import { IV2PoolProvider } from '../../../../providers/v2/pool-provider';

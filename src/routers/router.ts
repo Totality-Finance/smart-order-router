@@ -4,7 +4,7 @@ import {
   MixedRouteSDK,
   Protocol,
   Trade,
-} from '@uniswap/router-sdk';
+} from '@totality-fi/router-sdk';
 import {
   Currency,
   Fraction,
@@ -13,7 +13,7 @@ import {
   TradeType,
 } from '@uniswap/sdk-core';
 import { SwapOptions as UniversalRouterSwapOptions } from '@uniswap/universal-router-sdk';
-import { Route as V2RouteRaw } from '@uniswap/v2-sdk';
+import { Route as V2RouteRaw } from '@totality-fi/v1-sdk';
 import {
   Pool,
   Position,

@@ -1,11 +1,11 @@
 import { BigNumber } from '@ethersproject/bignumber';
 import { Logger } from '@ethersproject/logger';
 import { BaseProvider } from '@ethersproject/providers';
+import { SwapRouter, Trade } from '@totality-fi/router-sdk';
+import { Route } from '@totality-fi/v1-sdk';
+import { Pair } from '@totality-fi/v1-sdk';
 import DEFAULT_TOKEN_LIST from '@uniswap/default-token-list';
-import { SwapRouter, Trade } from '@uniswap/router-sdk';
 import { Currency, Token, TradeType } from '@uniswap/sdk-core';
-import { Route } from '@uniswap/v2-sdk';
-import { Pair } from '@uniswap/v2-sdk';
 import { MethodParameters } from '@uniswap/v3-sdk';
 import _ from 'lodash';
 import NodeCache from 'node-cache';

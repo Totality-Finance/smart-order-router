@@ -1,4 +1,4 @@
-import { ApprovalTypes } from '@uniswap/router-sdk';
+import { ApprovalTypes } from '@totality-fi/router-sdk';
 import { Currency, CurrencyAmount } from '@uniswap/sdk-core';
 
 import { SwapRouter02__factory } from '../types/other/factories/SwapRouter02__factory';

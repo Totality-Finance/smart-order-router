@@ -4,7 +4,7 @@ import {
   encodeMixedRouteToPath,
   MixedRouteSDK,
   Protocol,
-} from '@uniswap/router-sdk';
+} from '@totality-fi/router-sdk';
 import { encodeRouteToPath } from '@uniswap/v3-sdk';
 import retry, { Options as RetryOptions } from 'async-retry';
 import _ from 'lodash';
